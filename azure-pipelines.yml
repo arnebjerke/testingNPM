@@ -1,27 +1,24 @@
-trigger:
-- master
-
 pool:
-  vmImage: 'ubuntu-latest'
-
-variables:
-  buildConfiguration: 'Release'
-
+  vmImage: 'ubuntu-16.04'
+trigger:
+  - master
 steps:
-- script: dotnet build --configuration $(buildConfiguration)
-  displayName: 'dotnet build $(buildConfiguration)'
-# Node.js tool installer
-# Finds or downloads and caches the specified version spec of Node.js and adds it to the PATH
-- task: NodeTool@0
-  displayName: Node install
-  inputs:
-    versionSpec: '>=6.10.0' 
-    checkLatest: true # Optional
-# Write the installed version to the command line
-- script: npm i -g snyk
-- script: snyk test || true
-  env:
-    SNYK_TOKEN: $(SNYK_TOKEN)
-- script: snyk monitor --org=9813a9b3-6a54-4c33-bff8-c1cb9c12b7fe --project-name=dotNet-goof-azure-pipelines
-  env:
-    SNYK_TOKEN: $(SNYK_TOKEN) 
+  - task: CopyFiles@2
+    displayName: 'Copy Files to: $(build.artifactstagingdirectory)/Templates'
+    inputs:
+      SourceFolder: deployment
+      Contents: '*.json'
+      TargetFolder: '$(build.artifactstagingdirectory)/Templates'
+  - task: Npm@1
+    displayName: 'npm custom'
+    inputs:
+      command: custom
+      verbose: false
+      customCommand: 'install --production'
+  - task: ArchiveFiles@2
+    displayName: 'Archive $(Build.SourcesDirectory)'
+    inputs:
+      rootFolderOrFile: '$(Build.SourcesDirectory)'
+      includeRootFolder: false
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Artifact: drop'
